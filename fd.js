@@ -47,7 +47,7 @@ function update(){
     let count = 0;
     for(let j = 0; j < resy; j++){
         videoData.push([]);
-        for(let i = 0; i < resx; i+=4){
+        for(let i = 0; i < resx; i++){
             videoData[j].push((0.2126*data.data[count] + 0.7152*data.data[count+1] + 0.0722*data.data[count+2])/255);
             count += 4;
         }
@@ -55,108 +55,56 @@ function update(){
 }
 
 function xder(){
+    let array = [];
+    for(let j = 0; j < resy; j++){
+        array.push([]);
+        for(let i = 0; i < resx; i++){
+            array[j].push(0);
+        }
+    }
     for(let j = 0; j < videoData.length; j++){
         for(let i = 0; i < videoData[0].length; i++){
             if(i == videoData[0].length -1){
-                videoOut[j][i] = 0;
+                array[j][i] = 0;
             }
             else{
-                videoOut[j][i] = Math.abs(videoData[j][i] - videoData[j][i+1]);
+                array[j][i] = Math.abs(videoData[j][i] - videoData[j][i+1]);
             }
         }
     }
+    return array;
 }
 
 function yder(){
+    let array = [];
+    for(let j = 0; j < resy; j++){
+        array.push([]);
+        for(let i = 0; i < resx; i++){
+            array[j].push(0);
+        }
+    }
 
     for(let j = 0; j < videoData.length; j++){
         for(let i = 0; i < videoData[0].length; i++){
             if(j == videoData.length -1){
-                videoOut[j][i] = 0;
+                array[j][i] = 0;
             }
             else{
-                videoOut[j][i] = Math.abs(videoData[j][i] - videoData[j+1][i]);
+                array[j][i] = Math.abs(videoData[j][i] - videoData[j+1][i]);
             }
+        }
+    }
+    return array;
+}
+
+function totalder(x,y){
+    for(let j = 0; j < resy; j++){
+        for(let i = 0; i < resx; i++){
+            videoOut[j][i] = (x[j][i] + y[j][i])/2;
         }
     }
 }
 
-videoDataCurrent = [];
-videoDataPast = [];
-
-function xderavitive(){
-    ctxE.drawImage(video,0,0,resx,resy);
-    let data = ctxE.getImageData(0,0,resx,resy);
-    array = [];
-    for (let i = 0; i<data.data.length; i++){
-        videoDataCurrent[i] = data.data[i];
-    }
-    try {
-        for (let i = 0; i < videoDataCurrent.length-4; i += 4) {
-            difference = Math.abs(videoDataCurrent[i] - videoDataCurrent[i+4]) + Math.abs(videoDataCurrent[i+1] - videoDataCurrent[i+5])+ Math.abs(videoDataCurrent[i+2] - videoDataCurrent[i+6]);
-            if (difference > 20){
-                data.data[i] = data.data[i+1] = data.data[i+2] = 255;
-                array.push(1);
-
-            }
-            else{
-                data.data[i] = data.data[i+1] = data.data[i+2] = 0;
-                array.push(0);
-            }
-        }
-
-        ctxE.clearRect(0,0,w,h);
-        ctx.putImageData(data,0,0);
-    }
-    catch (e) {
-        console.log(e);
-        return;
-    }
-}
-
-function tderivative(){
-    let data = ctxE.getImageData(0,0,resx,resy);
-
-    array = [];
-    for (let i = 0; i<data.data.length; i++){
-        videoDataCurrent[i] = data.data[i];
-    }
-    try {
-        for (let i = 0; i < videoDataCurrent.length; i += 4) {
-            difference = Math.abs(videoDataCurrent[i] - videoDataPast[i]) + Math.abs(videoDataCurrent[i+1] - videoDataPast[i+1])+ Math.abs(videoDataCurrent[i+2] - videoDataPast[i+2]);
-            if (difference > 80){
-                data.data[i] = data.data[i+1] = data.data[i+2] = 255;
-                array.push(1);
-
-            }
-            else{
-                data.data[i] = data.data[i+1] = data.data[i+2] = 0;
-                array.push(0);
-            }
-        }
-
-        ctxE.clearRect(0,0,w,h);
-        ctx.putImageData(data,0,0);
-        //noiseReduce();
-    }
-    catch (e) {
-        console.log(e);
-        return;
-    }
-    // let count = 0;
-    // let sum = 0;
-    // for(let i = 0; i < resy; i++){
-    // 	for(let j = 0; j < resx; j++){
-    // 		sum = sum + array[count];
-    // 		count += 1;
-    // 	}
-    // 	console.log(i + ": sum = " + sum);
-    // }
-    for (let i = 0; i<videoDataCurrent.length; i++){
-        videoDataPast[i] = videoDataCurrent[i];
-    }
-
-}
 
 function noiseReduce(){
     data2 = ctxE.getImageData(0,0,resx,resy);
@@ -190,11 +138,17 @@ function draw() {
     let count = 0;
     for(let j = 0; j < resy; j++){
         for(let i = 0; i < resx; i++){
-            if(videoOut[j][i] < 0.2){
-                data.data[count]=data.data[count+1]=data.data[count+2]=0
+            if(videoOut[j][i] < 0.05){
+                data.data[count]=0;
+                data.data[count+1]=0;
+                data.data[count+2]=0;
+                data.data[count+3]=255;
             }
             else{
-                data.data[count]=data.data[count+1]=data.data[count+2]=255
+                data.data[count]=255;
+                data.data[count+1]=255;
+                data.data[count+2]=255;
+                data.data[count+3]=255;
             }
             count += 4;
         }
@@ -203,13 +157,17 @@ function draw() {
     ctx.putImageData(data,0,0);
 }
 
+function erosion(){
+    
+}
+
 
 
 function animate() {
     //ctx.clearRect(0,0,w,h);
     //ctxE.clearRect(0,0,w,h);
     update();
-    yder();
+    totalder(xder(),yder());
     draw();
     requestAnimationFrame(animate);
 }
