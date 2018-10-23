@@ -31,6 +31,15 @@ if (navigator.mediaDevices.getUserMedia) {
 
 //my code starts here 
 videoData = [];
+videoOut = [];
+
+for(let j = 0; j < resy; j++){
+    videoOut.push([]);
+    for(let i = 0; i < resx; i++){
+        videoOut[j].push(0);
+    }
+}
+
 function update(){
     videoData = [];
     ctxE.drawImage(video,0,0,resx,resy);
@@ -41,6 +50,33 @@ function update(){
         for(let i = 0; i < resx; i+=4){
             videoData[j].push((0.2126*data.data[count] + 0.7152*data.data[count+1] + 0.0722*data.data[count+2])/255);
             count += 4;
+        }
+    }
+}
+
+function xder(){
+    for(let j = 0; j < videoData.length; j++){
+        for(let i = 0; i < videoData[0].length; i++){
+            if(i == videoData[0].length -1){
+                videoOut[j][i] = 0;
+            }
+            else{
+                videoOut[j][i] = Math.abs(videoData[j][i] - videoData[j][i+1]);
+            }
+        }
+    }
+}
+
+function yder(){
+
+    for(let j = 0; j < videoData.length; j++){
+        for(let i = 0; i < videoData[0].length; i++){
+            if(j == videoData.length -1){
+                videoOut[j][i] = 0;
+            }
+            else{
+                videoOut[j][i] = Math.abs(videoData[j][i] - videoData[j+1][i]);
+            }
         }
     }
 }
@@ -79,7 +115,6 @@ function xderavitive(){
 }
 
 function tderivative(){
-    ctxE.drawImage(video,0,0,resx,resy);
     let data = ctxE.getImageData(0,0,resx,resy);
 
     array = [];
@@ -150,7 +185,22 @@ function noiseReduce(){
 
 
 function draw() {
-
+    //ctxE.drawImage(video,0,0,resx,resy);
+    let data = ctxE.getImageData(0,0,resx,resy);
+    let count = 0;
+    for(let j = 0; j < resy; j++){
+        for(let i = 0; i < resx; i++){
+            if(videoOut[j][i] < 0.2){
+                data.data[count]=data.data[count+1]=data.data[count+2]=0
+            }
+            else{
+                data.data[count]=data.data[count+1]=data.data[count+2]=255
+            }
+            count += 4;
+        }
+    }
+    ctxE.clearRect(0,0,w,h);
+    ctx.putImageData(data,0,0);
 }
 
 
@@ -158,8 +208,9 @@ function draw() {
 function animate() {
     //ctx.clearRect(0,0,w,h);
     //ctxE.clearRect(0,0,w,h);
-    update()
-    draw()
+    update();
+    yder();
+    draw();
     requestAnimationFrame(animate);
 }
 animate();
