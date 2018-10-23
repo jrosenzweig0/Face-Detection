@@ -14,6 +14,9 @@ canvasExperimental.height = window.innerHeight;
 
 const resx = 600;
 const resy = 400;
+
+const thresh = 0.05;
+
 //Create video element and acess the webcam video 
 var video = document.createElement("video");
 
@@ -106,31 +109,6 @@ function totalder(x,y){
 }
 
 
-function noiseReduce(){
-    data2 = ctxE.getImageData(0,0,resx,resy);
-    data1 = ctxE.getImageData(1,1,resx-1, resy-1);
-    let count = 0;
-    for (let i = 0; i < data2.data.length; i+=4){
-        if(i<resx*4 || i > data2.data-resx*4 || i%resx*4 == 0 || i%resx*4 == resx*4-4){
-            continue
-        }
-        if (i==8000){
-            console.log(data2.data[i]==data1.data[count]);
-        }
-        else if(data2.data[i]==data1.data[count]){
-            if (data2.data[i-1]+data2.data[i+1]+data2.data[i+resx-1]+data2.data[i+resx]+data2.data[i+resx+1]+data2.data[i-resx+1]+data2.data[i-resx]+data2.data[i-resx-1] <(2*255)+1) {
-                data1.data[count] = data1.data[count+1] = data1.data[count+2] = 0;
-            }
-            count+=4;
-        }
-        else{
-            console.log("error");
-        }
-    }
-    ctx.putImageData(data1,1,1);
-
-}
-
 
 function draw() {
     //ctxE.drawImage(video,0,0,resx,resy);
@@ -138,7 +116,7 @@ function draw() {
     let count = 0;
     for(let j = 0; j < resy; j++){
         for(let i = 0; i < resx; i++){
-            if(videoOut[j][i] < 0.05){
+            if(videoOut[j][i] < thresh){
                 data.data[count]=0;
                 data.data[count+1]=0;
                 data.data[count+2]=0;
@@ -158,16 +136,59 @@ function draw() {
 }
 
 function erosion(){
-    
+    for(let j = 0; j < resy; j++){
+        for(let i = 0; i < resx; i++){
+            if(videoOut[j][i] < thresh){
+                videoOut[j][i] = 0;
+            }
+            else{
+                videoOut[j][i] = 1;
+            }
+        }
+    }
+    for(let j = 0; j < resy; j++){
+        for(let i = 0; i < resx; i++){
+            if(i == 0 || j == 0|| i == resx-1 || j == resy-1){
+                continue;
+            }
+            let sum = videoOut[j+1][i]+videoOut[j-1][i]+videoOut[j][i+1]+videoOut[j][i-1]+videoOut[j+1][i+1]+videoOut[j+1][i-1]+videoOut[j-1][i+1]+videoOut[j-1][i-1];
+            if(sum < 1){
+                videoOut[j][i] = 0;
+            }
+
+        }
+    }
+}
+
+function draw_graph(){
+    let sum = 0;
+    for(let i = 0; i < resx; i++){
+        sum = 0;
+        for(let j = 0; j < resy; j++){
+            sum = sum + videoOut[j][i];
+        }
+        ctx.fillRect(i,resy,1,sum);
+    }
+
+    for(let j = 0; j < resy; j++){
+        sum = 0;
+        for(let i = 0; i < resx; i ++){
+            sum = sum + videoOut[j][i];
+        }
+        ctx.fillRect(resx,j,sum,1);
+        ctx.fillStyle = "blue";
+    }
 }
 
 
 
 function animate() {
-    //ctx.clearRect(0,0,w,h);
+    ctx.clearRect(0,0,w,h);
     //ctxE.clearRect(0,0,w,h);
     update();
     totalder(xder(),yder());
+    erosion();
+    draw_graph();
     draw();
     requestAnimationFrame(animate);
 }
