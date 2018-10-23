@@ -30,6 +30,20 @@ if (navigator.mediaDevices.getUserMedia) {
 }
 
 //my code starts here 
+videoData = [];
+function update(){
+    videoData = [];
+    ctxE.drawImage(video,0,0,resx,resy);
+    let data = ctxE.getImageData(0,0,resx,resy);
+    let count = 0;
+    for(let j = 0; j < resy; j++){
+        videoData.push([]);
+        for(let i = 0; i < resx; i+=4){
+            videoData[j].push((0.2126*data.data[count] + 0.7152*data.data[count+1] + 0.0722*data.data[count+2])/255);
+            count += 4;
+        }
+    }
+}
 
 videoDataCurrent = [];
 videoDataPast = [];
@@ -144,7 +158,7 @@ function draw() {
 function animate() {
     //ctx.clearRect(0,0,w,h);
     //ctxE.clearRect(0,0,w,h);
-    xderavitive()
+    update()
     draw()
     requestAnimationFrame(animate);
 }
